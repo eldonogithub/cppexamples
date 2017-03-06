@@ -1,5 +1,6 @@
 *.orig
 *.o
-getifaddrs
-pipeline
-epoll_wait
+/getifaddrs
+/pipeline
+/epoll_wait
+/client
