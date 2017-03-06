@@ -1,5 +1,5 @@
 .PHONY: all
-all: pipeline epoll_wait getifaddrs
+all: pipeline epoll_wait getifaddrs client
 
 LDFLAGS=-lcurl
 CFLAGS=-g
@@ -13,6 +13,9 @@ epoll_wait: epoll_wait.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 getifaddrs: getifaddrs.o 
+	$(CXX) $^ -o $@
+
+client: client.o 
 	$(CXX) $^ -o $@
 
 clean:

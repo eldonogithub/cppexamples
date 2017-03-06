@@ -32,4 +32,4 @@ Accept: */*\r
 Content-Length: 0\r
 \r
 HTTP
-') | nc 127.0.0.1 4444
+') | nc 127.0.0.1 80
