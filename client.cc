@@ -90,9 +90,9 @@ int main( int argc, char* argv[])
     return EXIT_FAILURE;
   }
 
-
-
-  for( int i = 0; i < 10; i++ ) {
+  int requests = 0;
+  int responses = 0;
+  for( int i = 0; i < 1000; i++ ) {
     std::stringstream s;
     s << "GET /test HTTP/1.1\r\n"
       << "Host:" << argv[1] << ":" << argv[2] << "\r\n"
@@ -116,6 +116,7 @@ int main( int argc, char* argv[])
 
       b.erase(0,r);
     }
+    requests++;
   }
   char buf[16];
   while ( 1 ) {

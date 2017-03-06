@@ -278,6 +278,7 @@ main (int argc, char *argv[])
           }
           it->second.append(buf);
           std::string::size_type pos = it->second.find("\r\n\r\n");
+          // is there an end of request?
           if ( pos != std::string::npos ) {
             message++;
 
@@ -288,7 +289,7 @@ main (int argc, char *argv[])
             s = write (fd, response.str().c_str(), response.str().length());
             std::cerr << "Response: " << std::endl;
             std::cerr << response.str() << std::endl;
-            it->second = it->second.substr(pos);
+            it->second.erase(0,pos);
           }
 //                  Searches for all matches of regex, prints prefix, match, suffix
 //                  std::smatch match;
