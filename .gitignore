@@ -1,3 +1,4 @@
+core
 *.orig
 *.o
 /getifaddrs

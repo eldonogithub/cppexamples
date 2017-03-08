@@ -256,13 +256,13 @@ main (int argc, char *argv[])
           }
 
           /* Write the buffer to standard output */
+
           // terminate the input buffer
           buf[count] = 0;
-          std::cerr << buf << std::endl;
 
           // find the input buffer for this socket?
-          std::map<int, std::string>::iterator it = buffer.find(events[i].data.fd);
           int fd = events[i].data.fd;
+          std::map<int, std::string>::iterator it = buffer.find(fd);
 
           // is there an input buffer for this socket?
           if ( it == buffer.end() ) {
@@ -276,20 +276,49 @@ main (int argc, char *argv[])
             }
             it = ret.first;
           }
+
           it->second.append(buf);
           std::string::size_type pos = it->second.find("\r\n\r\n");
           // is there an end of request?
           if ( pos != std::string::npos ) {
+            std::cerr << "Found Message: Length: " << pos << " FD: " << fd << std::endl;
+            std::string msg = it->second.substr(0, pos);
+
+            // skip the method line
+            std::size_t mpos = msg.find("\r\n");
+            std::size_t s = mpos+2;
+
+            // find all headers
+            std::map<std::string, std::string> headers;
+            for(std::size_t hpos = msg.find("\r\n",s); hpos != std::string::npos; hpos = msg.find("\r\n", s) ) {
+              std::string header = msg.substr(s, hpos-s);
+              std::size_t cpos = header.find(":");
+
+              std::string key = header.substr(0, cpos);
+              std::string value = header.substr(cpos+1, hpos);
+              headers.insert(std::pair<std::string,std::string>(key ,value ));
+              std::cerr << "#Header: " << key << ": [" << value << "]" << std::endl;
+              s = hpos+2;
+            }
+            std::cerr << it->second.substr(0, pos) << std::endl;
             message++;
 
+            std::map<std::string, std::string>::iterator it = headers.find("Request-Id");
+            std::stringstream id;
+            if ( it != headers.end()) {
+              id << it->first << ": " << it->second << " FD: " << fd;
+            }
             std::stringstream response;
-            response << "HTTP/1.1 200 OK\r\nServer: " << message << "\r\nContent-Length: 0\r\n\r\n";
+            response << "HTTP/1.1 200 OK\r\n"
+                     << "Server: " << message << " FD: " << fd << "\r\n"
+                     << id.str() << "\r\n"
+                     << "Content-Length: 0\r\n\r\n";
             // Found request
-            std::cerr << "Found Message: " << it->second.substr(0, pos) << std::endl;
             s = write (fd, response.str().c_str(), response.str().length());
             std::cerr << "Response: " << std::endl;
             std::cerr << response.str() << std::endl;
-            it->second.erase(0,pos);
+
+            it->second.erase(0,pos+4);
           }
 //                  Searches for all matches of regex, prints prefix, match, suffix
 //                  std::smatch match;

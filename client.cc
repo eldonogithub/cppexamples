@@ -13,6 +13,10 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <string.h>
+#include <map>
+       #include <sys/types.h>
+       #include <unistd.h>
+
 
 class Connection
 {
@@ -25,6 +29,10 @@ private:
 
 int main( int argc, char* argv[])
 {
+  pid_t pid = getpid();
+
+  std::map<int, std::string> buffer;
+
   if ( argc != 3 ) {
     std::cerr << "Usage: %s HOST PORT" << std::endl;
     return EXIT_FAILURE;
@@ -92,31 +100,33 @@ int main( int argc, char* argv[])
 
   int requests = 0;
   int responses = 0;
-  for( int i = 0; i < 1000; i++ ) {
-    std::stringstream s;
-    s << "GET /test HTTP/1.1\r\n"
-      << "Host:" << argv[1] << ":" << argv[2] << "\r\n"
-      << "User-Agent: " << i << "\r\n"
-      << "Accept: */*\r\n"
-      << "Content-Length: 0\r\n"
-      << "\r\n";
-    std::string b = s.str();
-    while(b.length() > 0 ) {
-      // ssize_t write(int fd, const void *buf, size_t count);
-      r = write(sfd, b.c_str(), b.length());
+  for( int j = 0; j < 10; j++ ) {
+    for( int i = 0; i < 100; i++ ) {
+      requests++;
+      std::stringstream s;
+      s << "GET /test HTTP/1.1\r\n"
+        << "Host:" << argv[1] << ":" << argv[2] << "\r\n"
+        << "Accept: */*\r\n"
+        << "Request-Id: " << pid << "-" << requests << "\r\n"
+        << "Content-Length: 0\r\n"
+        << "\r\n";
+      std::string b = s.str();
+      while(b.length() > 0 ) {
+        // ssize_t write(int fd, const void *buf, size_t count);
+        r = write(sfd, b.c_str(), b.length());
 
-      if ( r == -1 ) {
-        if ( errno == EWOULDBLOCK ) {
-          continue;
+        if ( r == -1 ) {
+          if ( errno == EWOULDBLOCK ) {
+            continue;
+          }
+          perror("write");
+          return EXIT_FAILURE;
         }
-        perror("write");
-        return EXIT_FAILURE;
-      }
-      std::cout << b.substr(0, r);
+        std::cout << b.substr(0, r);
 
-      b.erase(0,r);
+        b.erase(0,r);
+      }
     }
-    requests++;
   }
   char buf[16];
   while ( 1 ) {
@@ -130,10 +140,33 @@ int main( int argc, char* argv[])
     }
     if ( r == 0 ) {
       std::cerr << "Socket closed" << std::endl;
-      break;
+      close(sfd);
+      return EXIT_FAILURE;
     }
     buf[r] = 0;
-    std::cout << buf;
+    // find the input buffer for this socket?
+    int fd = sfd;
+    std::map<int, std::string>::iterator it = buffer.find(fd);
+
+    // is there an input buffer for this socket?
+    if ( it == buffer.end() ) {
+      // No, so make one
+      std::pair<std::map<int, std::string>::iterator, bool> ret;
+      ret = buffer.insert(std::pair<int, std::string>(fd, std::string()));
+      if ( ret.second == false ) {
+        std::cerr << "Unable to insert into map" << std::endl;
+        return EXIT_FAILURE;
+      }
+      it = ret.first;
+    }
+
+    it->second.append(buf);
+    std::string::size_type pos = it->second.find("\r\n\r\n");
+    // is there an end of request?
+    if ( pos != std::string::npos ) {
+      std::cerr << "Found Response: " << pos << std::endl;
+      std::cerr << it->second.substr(0, pos) << std::endl;
+      it->second.erase(0,pos+4);
+    }
   }
-  close(sfd);
 }
