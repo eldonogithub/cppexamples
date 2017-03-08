@@ -4,7 +4,7 @@ all: pipeline epoll_wait getifaddrs client
 LDFLAGS=-lcurl
 CFLAGS=-g
 CC=gcc
-CXX=g++ -g -std=c++14
+CXX=g++ -g -std=c++14 -Wall -Wshadow
 
 pipeline: pipeline.o
 	$(CC) $^ $(LDFLAGS) -o $@

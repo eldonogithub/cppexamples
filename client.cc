@@ -99,7 +99,6 @@ int main( int argc, char* argv[])
   }
 
   int requests = 0;
-  int responses = 0;
   for( int j = 0; j < 10; j++ ) {
     for( int i = 0; i < 100; i++ ) {
       requests++;
@@ -107,7 +106,7 @@ int main( int argc, char* argv[])
       s << "GET /test HTTP/1.1\r\n"
         << "Host:" << argv[1] << ":" << argv[2] << "\r\n"
         << "Accept: */*\r\n"
-        << "Request-Id: " << pid << "-" << requests << "\r\n"
+        << "Request-Id: " << pid << ":" << requests << "\r\n"
         << "Content-Length: 0\r\n"
         << "\r\n";
       std::string b = s.str();
