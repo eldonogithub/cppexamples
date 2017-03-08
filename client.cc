@@ -14,8 +14,8 @@
 #include <sys/types.h>
 #include <string.h>
 #include <map>
-       #include <sys/types.h>
-       #include <unistd.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 
 class Connection
@@ -97,10 +97,23 @@ int main( int argc, char* argv[])
     std::cerr << "Could not connect" << std::endl;
     return EXIT_FAILURE;
   }
+  socklen_t in_len;
+  char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+  in_len = sizeof(sockaddr);
 
+  r = getnameinfo (rp->ai_addr, in_len,
+                   hbuf, sizeof(hbuf),
+                   sbuf, sizeof(sbuf),
+                   NI_NUMERICHOST | NI_NUMERICSERV);
+  if (r == 0) {
+
+    printf("Connected to address "
+           "(host=%s, port=%s)\n", hbuf, sbuf);
+
+  }
   int requests = 0;
-  for( int j = 0; j < 10; j++ ) {
-    for( int i = 0; i < 100; i++ ) {
+  for( int j = 0; j < 1; j++ ) {
+    for( int i = 0; i < 1; i++ ) {
       requests++;
       std::stringstream s;
       s << "GET /test HTTP/1.1\r\n"
