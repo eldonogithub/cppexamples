@@ -3,7 +3,7 @@
 #include <iostream>
 #include <map>
 #include <netdb.h>
-#include <regex>
+//#include <regex>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -94,7 +94,7 @@ std::map<int, std::string> buffer;
 std::map<int, std::string> response;
 
 //std::regex regex("\\b(\r|\n)+\\b");
-std::regex regex("\r\n\r\n");
+//std::regex regex("\r\n\r\n");
 int message = 0;
 
 static int

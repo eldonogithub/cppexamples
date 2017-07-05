@@ -1,10 +1,10 @@
 .PHONY: all
-all: pipeline epoll_wait getifaddrs client
+all: epoll_wait getifaddrs client
 
-LDFLAGS=-lcurl
+#LDFLAGS=-lcurl
 CFLAGS=-g
 CC=gcc
-CXX=g++ -g -std=c++14 -Wall -Wshadow
+CXX=g++ -g -std=c++98 -Wall -Wshadow
 
 pipeline: pipeline.o
 	$(CC) $^ $(LDFLAGS) -o $@
