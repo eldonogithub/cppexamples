@@ -14,6 +14,26 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+int create_poll() {
+  int efd = epoll_create1 (0);
+  if (efd == -1) {
+    perror ("epoll_create");
+    abort ();
+  }
+  return efd;
+}
+
+void add_listen_socket(int efd, int sfd ) {
+  struct epoll_event event;
+  event.data.fd = sfd;
+  event.events = EPOLLIN | EPOLLET;
+  int s = epoll_ctl (efd, EPOLL_CTL_ADD, sfd, &event);
+  if (s == -1) {
+    perror ("epoll_ctl");
+    abort ();
+  }
+}
+
 static int
 create_and_bind (char *port)
 {
@@ -47,8 +67,9 @@ create_and_bind (char *port)
   }
   for (rp = result; rp != NULL; rp = rp->ai_next) {
     sfd = socket (rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-    if (sfd == -1)
+    if (sfd == -1) {
       continue;
+    }
 
     int optval = 1;
     s = setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
@@ -118,7 +139,7 @@ make_socket_non_blocking (int sfd)
   return 0;
 }
 
-#define MAXEVENTS 64
+#define MAXEVENTS 2048
 
 int
 main (int argc, char *argv[])
@@ -134,12 +155,14 @@ main (int argc, char *argv[])
   }
 
   sfd = create_and_bind (argv[1]);
-  if (sfd == -1)
+  if (sfd == -1) {
     abort ();
+  }
 
   s = make_socket_non_blocking (sfd);
-  if (s == -1)
+  if (s == -1) {
     abort ();
+  }
 
   s = listen (sfd, SOMAXCONN);
   if (s == -1) {
@@ -147,19 +170,10 @@ main (int argc, char *argv[])
     abort ();
   }
 
-  efd = epoll_create1 (0);
-  if (efd == -1) {
-    perror ("epoll_create");
-    abort ();
-  }
+  efd = create_poll();
 
-  event.data.fd = sfd;
-  event.events = EPOLLIN | EPOLLET;
-  s = epoll_ctl (efd, EPOLL_CTL_ADD, sfd, &event);
-  if (s == -1) {
-    perror ("epoll_ctl");
-    abort ();
-  }
+  // add listen socket 
+  add_listen_socket(efd, sfd);
 
   /* Buffer where events are returned */
   events = ( epoll_event *)calloc (MAXEVENTS, sizeof event);
@@ -215,8 +229,9 @@ main (int argc, char *argv[])
           /* Make the incoming socket non-blocking and add it to the
              list of fds to monitor. */
           s = make_socket_non_blocking (infd);
-          if (s == -1)
+          if (s == -1) {
             abort ();
+          }
 
           event.data.fd = infd;
           event.events = EPOLLIN | EPOLLET;
@@ -308,11 +323,18 @@ main (int argc, char *argv[])
             if ( rit != headers.end()) {
               id << "Response-Id: " << rit->second << ":" << fd;
             }
+            std::map<std::string, std::string>::iterator eit = headers.find("Expect");
             std::stringstream httpresp;
+            if ( eit != headers.end()) {
+              id << "Expect: " << eit->second << ":" << fd;
+            httpresp << "HTTP/1.1 100 Continue\r\n"
+                     << "\r\n";
+            }
             httpresp << "HTTP/1.1 200 OK\r\n"
                      << "Server: " << message << " FD: " << fd << "\r\n"
                      << id.str() << "\r\n"
-                     << "Content-Length: 0\r\n\r\n";
+                     << "Content-Length: 0\r\n"
+                     << "\r\n";
             // Found request
             s = write (fd, httpresp.str().c_str(), httpresp.str().length());
             //std::cerr << "Response: " << std::endl;

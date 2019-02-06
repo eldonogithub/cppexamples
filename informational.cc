@@ -78,6 +78,7 @@ int main( int argc, char* argv[])
       return EXIT_FAILURE;
     }
 
+    // Set socket to nonblocking
     r = fcntl(sfd, F_SETFL, flags | O_NONBLOCK);
     if (r == -1) {
       perror("fcntl");
